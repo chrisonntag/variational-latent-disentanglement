@@ -2,6 +2,7 @@
 
 Reconstructing and understanding decisions made by machine learning models becomes more and more
 important since used in areas that have great impact on societies and may directly affect people’s lives.
+
 This project’s goal is to contribute to the understanding and visualization of latent spaces in Variational
 Autoencoders based on labour market data. The main idea of using Autoencoders is in general that by
 reducing dimensions from the input space while trying to resemble the input from this lower dimensional
