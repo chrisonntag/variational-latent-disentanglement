@@ -19,31 +19,40 @@ train_images = tf.expand_dims(train_images, axis=-1)
 valid_images = tf.expand_dims(valid_images, axis=-1)
 
 # Setup training
-params = {
-    "optimizer": "Adam",
-    "learning_rate": 1e-3,
-    "epochs": 3,
-    "batch_size": 128,
-    "latent_dim": 2,
-    "beta": 0.01,
-}
-optimizers = {"Adam": keras.optimizers.Adam(learning_rate=params['learning_rate'])}
-optimizer = optimizers[params['optimizer']]
+betas = [0.01, 0.1, 0.5, 1, 1.2, 1.5, 2]
+dims = [1, 2, 3, 4, 8, 12, 16]
 
-# Create dataset - only needed for manual training
-train_ds = (tf.data.Dataset.from_tensor_slices(train_images)).shuffle(buffer_size=1024).batch(params['batch_size'])
-valid_ds = (tf.data.Dataset.from_tensor_slices(valid_images)).batch(params['batch_size'])
+params_list = []
+for b in betas:
+    for dim in dims:
+        params_list.append(
+            {
+                "optimizer": "Adam",
+                "learning_rate": 1e-3,
+                "epochs": 40,
+                "batch_size": 128,
+                "latent_dim": dim,
+                "beta": b,
+            }
+        )
 
-# Create model and do Training
-vae = VariationalAutoEncoderMNIST(z_dim=params['latent_dim'], beta=params['beta'])
-trainer = Trainer(model=vae, params=params, optimizer=optimizer)
+for params in params_list:
+    optimizers = {"Adam": keras.optimizers.Adam(learning_rate=params['learning_rate'])}
+    optimizer = optimizers[params['optimizer']]
 
-train_history, val_history = trainer.train(train_ds, valid_ds)
-history = {"train_loss": train_history, "val_loss": val_history}
+    # Create dataset - only needed for manual training
+    train_ds = (tf.data.Dataset.from_tensor_slices(train_images)).shuffle(buffer_size=1024).batch(params['batch_size'])
+    valid_ds = (tf.data.Dataset.from_tensor_slices(valid_images)).batch(params['batch_size'])
 
+    # Create model and do Training
+    vae = VariationalAutoEncoderMNIST(z_dim=params['latent_dim'], beta=params['beta'])
+    trainer = Trainer(model=vae, params=params, optimizer=optimizer)
 
-experiment = Experiment(base_path="experiments/")
-experiment.save(model=vae, history=history, params=params)
-experiment.plot(history['train_loss'], history['val_loss'])
+    train_history, val_history = trainer.train(train_ds, valid_ds)
+    history = {"train_loss": train_history, "val_loss": val_history}
+
+    experiment = Experiment(base_path="experiments/")
+    experiment.save(model=vae, history=history, params=params)
+    experiment.plot(history['train_loss'], history['val_loss'])
 
 

@@ -105,7 +105,7 @@ class VariationalAutoEncoderMNIST(keras.Model):
         kl_loss = -0.5 * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
         kl_loss = tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1))
 
-        return reconstruction_loss + self.beta * kl_loss
+        return reconstruction_loss + self.beta * kl_loss, reconstruction
 
     def compute_loss_monte_carlo(self, x, training=False):
         """
@@ -120,15 +120,11 @@ class VariationalAutoEncoderMNIST(keras.Model):
         logpz = log_normal_pdf(z, 0., 0.)
         logqz_x = log_normal_pdf(z, z_mean, z_log_var)
 
-        return -tf.reduce_mean(logpx_z + logpz - logqz_x)
+        return -tf.reduce_mean(logpx_z + logpz - logqz_x), reconstruction
 
     def call(self, x):
-        z_mean, z_log_var, z = self.encoder(x)
-        reconstruction = self.decoder(z)
-
-        kl_loss = -0.5 * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
-        kl_loss = self.beta * tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1))
-        self.add_loss(kl_loss)
+        total_loss, reconstruction = self.compute_loss_monte_carlo(x)
+        self.add_loss(total_loss)
 
         return reconstruction
 
