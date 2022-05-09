@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" serverName="Jyn" remoteFilesAllowedToDisappearOnAutoupload="false">
+    <serverData>
+      <paths name="Jyn">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/P2_Sonntag" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath path="/P2_Sonntag/experiments" />
+            <excludedPath local="true" path="$PROJECT_DIR$/experiments" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
+    </serverData>
+  </component>
+</project>

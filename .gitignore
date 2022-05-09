@@ -1,4 +1,6 @@
 experiments/**
+.idea/deployment.xml
+.idea/webServers.xml
 *.pckl
 *.index
 *.pb

@@ -12,7 +12,7 @@ class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
 def plot_latent_space(model, out_dir, n=30, figsize=15, title="Latent space examples", show=False):
     # display a n*n 2D manifold of digits
     digit_size = 28
-    scale = 1.0
+    scale = 3.0
     figure = np.zeros((digit_size * n, digit_size * n))
     # linearly spaced coordinates corresponding to the 2D plot
     # of digit classes in the latent space

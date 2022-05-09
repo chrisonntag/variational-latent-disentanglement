@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="f83856c9-effc-400a-a09a-32edeba006f1" name="Jyn" url="http://localhost">
+        <fileTransfer rootFolder="/export/home/sonntagc25dm" accessType="SFTP" host="jyn.dm.univie.ac.at" port="22" sshConfigId="d33fc044-91f6-43f9-b73d-fe9f0b28a20f" sshConfig="sonntagc25dm@jyn.dm.univie.ac.at:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

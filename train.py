@@ -45,9 +45,9 @@ for b in betas:
         params_list.append(
             {
                 "optimizer": "Adam",
-                "learning_rate": 1e-3,
-                "epochs": 20,
-                "batch_size": 400,
+                "learning_rate": 1e-1,
+                "epochs": 12,
+                "batch_size": 32,
                 "latent_dim": dim,
                 "beta": b,
             }
