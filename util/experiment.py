@@ -68,3 +68,21 @@ class Experiment:
         plt.legend(['training', 'validation'], loc='upper right')
         plt.savefig(os.path.join(self.vis_dir, 'losses' + '.png'))
         plt.close()
+
+
+def load_experiments(with_params=None, base_path="experiments/"):
+    # Load all experiments with basic configuration into a dictionary
+    experiments = {}
+
+    for directory in os.listdir(base_path):
+        d = os.path.join(base_path, directory)
+        if os.path.isdir(d):
+            exp = Experiment(name=directory, base_path=base_path)
+
+            if len(exp.params.items() & with_params.items()) == len(with_params.items()):
+                # Save to dict
+                experiments[directory] = {
+                    'params': exp.params,
+                    'experiment': exp
+                }
+    return experiments

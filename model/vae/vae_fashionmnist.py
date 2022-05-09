@@ -1,9 +1,3 @@
-# VAE Base
-import os
-from abc import ABC, abstractmethod
-import pathlib
-import h5py
-import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from model.layers.sampling import Sampling
@@ -102,7 +96,7 @@ class VariationalAutoEncoderMNIST(keras.Model):
 
         return reconstruction_loss + self.beta * kl_loss, reconstruction
 
-    def compute_loss_monte_carlo(self, x, training=False):
+    def compute_loss_monte_carlo(self, x):
         """
         Optimize the single sample Monte Carlo estimate of this expectation:
         log p(x|z) + log p(z) - log q(z|x), where z is sampled from q(z|x)

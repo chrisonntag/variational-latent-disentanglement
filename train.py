@@ -27,6 +27,8 @@ dims = [1, 2, 3, 4, 8, 12, 16]
 params_list = []
 for b in betas:
     for dim in dims:
+        # must be primitive datatypes, because they are stored as pickles and used
+        # for filtering in the visualization process.
         params_list.append(
             {
                 "optimizer": "Adam",
