@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -5,6 +6,18 @@ from model.vae.vae_fashionmnist import VariationalAutoEncoderMNIST
 from util.experiment import Experiment
 from util.trainer import Trainer
 from model.distributions import log_normal_pdf
+
+os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = "true"
+os.environ["CUDA_VISIBLE_DEVICES"] = '0,1'  # Set to -1 if CPU should be used CPU = -1 , GPU = 0
+
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    # Restrict TensorFlow to only use the first GPU
+    try:
+        tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
+    except RuntimeError as e:
+        # Visible devices must be set at program startup
+        print(e)
 
 
 # Download Dataset
