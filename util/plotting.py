@@ -9,7 +9,7 @@ class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
                'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 
 
-def plot_latent_space(model, out_dir, n=30, figsize=15, title="Latent space examples"):
+def plot_latent_space(model, out_dir, n=30, figsize=15, title="Latent space examples", show=False):
     # display a n*n 2D manifold of digits
     digit_size = 28
     scale = 1.0
@@ -42,10 +42,12 @@ def plot_latent_space(model, out_dir, n=30, figsize=15, title="Latent space exam
     plt.title(title)
     plt.imshow(figure, cmap="Greys_r")
     plt.savefig(os.path.join(out_dir, 'latent_sampled_grid' + '.png'))
+    if show:
+        plt.show()
     plt.close()
 
 
-def plot_label_clusters(model, data, labels, out_dir, title="Latent Clustering"):
+def plot_label_clusters(model, data, labels, out_dir, title="Latent Clustering", show=False):
     # display a 2D plot of the digit classes in the latent space
     z_mean, _, _ = model.encoder(data)
     plt.figure(figsize=(12, 10))
@@ -58,4 +60,6 @@ def plot_label_clusters(model, data, labels, out_dir, title="Latent Clustering")
     plt.ylabel("z[1]")
     plt.title(title)
     plt.savefig(os.path.join(out_dir, 'latent_clusters' + '.png'))
+    if show:
+        plt.show()
     plt.close()
