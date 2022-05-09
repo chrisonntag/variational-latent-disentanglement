@@ -4,6 +4,8 @@ from tensorflow import keras
 from model.vae.vae_fashionmnist import VariationalAutoEncoderMNIST
 from util.experiment import Experiment
 from util.trainer import Trainer
+from model.distributions import log_normal_pdf
+
 
 # Download Dataset
 fashion_mnist = keras.datasets.fashion_mnist
@@ -45,7 +47,7 @@ for params in params_list:
     valid_ds = (tf.data.Dataset.from_tensor_slices(valid_images)).batch(params['batch_size'])
 
     # Create model and do Training
-    vae = VariationalAutoEncoderMNIST(z_dim=params['latent_dim'], beta=params['beta'])
+    vae = VariationalAutoEncoderMNIST(z_dim=params['latent_dim'], beta=params['beta'], prior=log_normal_pdf)
     trainer = Trainer(model=vae, params=params, optimizer=optimizer)
 
     train_history, val_history = trainer.train(train_ds, valid_ds)

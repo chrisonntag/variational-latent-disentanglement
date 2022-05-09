@@ -7,13 +7,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from model.layers.sampling import Sampling
-
-
-def log_normal_pdf(sample, mean, logvar, raxis=1):
-    log2pi = tf.math.log(2. * np.pi)
-    return tf.reduce_sum(
-        -.5 * ((sample - mean) ** 2. * tf.exp(-logvar) + logvar + log2pi),
-        axis=raxis)
+from model.distributions import log_normal_pdf
 
 
 class Encoder(keras.Model):
@@ -85,11 +79,12 @@ class Decoder(keras.Model):
 
 
 class VariationalAutoEncoderMNIST(keras.Model):
-    def __init__(self, input_dim=(28, 28, 1), z_dim=10, beta=0.01):
+    def __init__(self, input_dim=(28, 28, 1), z_dim=10, beta=0.01, prior=log_normal_pdf):
         super(VariationalAutoEncoderMNIST, self).__init__(name="FashionVAE")
         self.input_dim = input_dim
         self.z_dim = z_dim
         self.beta = beta
+        self.prior = prior
         self.encoder = Encoder(input_dim, z_dim)  # self.build_encoder()
         self.decoder = Decoder(input_dim, z_dim)  # self.build_decoder()
 
@@ -117,8 +112,8 @@ class VariationalAutoEncoderMNIST(keras.Model):
 
         reconstruction_loss = tf.nn.sigmoid_cross_entropy_with_logits(logits=reconstruction, labels=x)
         logpx_z = -tf.reduce_sum(reconstruction_loss, axis=[1, 2, 3])
-        logpz = log_normal_pdf(z, 0., 0.)
-        logqz_x = log_normal_pdf(z, z_mean, z_log_var)
+        logpz = self.prior(z, 0., 0.)
+        logqz_x = self.prior(z, z_mean, z_log_var)
 
         return -tf.reduce_mean(logpx_z + logpz - logqz_x), reconstruction
 
