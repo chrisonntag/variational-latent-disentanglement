@@ -52,7 +52,7 @@ for params in params_list:
     history = {"train_loss": train_history, "val_loss": val_history}
 
     experiment = Experiment(base_path="experiments/")
-    experiment.save(model=vae, history=history, params=params)
+    experiment.save(params, model=vae, history=history)
     experiment.plot(history['train_loss'], history['val_loss'])
 
 

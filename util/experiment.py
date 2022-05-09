@@ -11,6 +11,9 @@ import pickle
 class Experiment:
     def __init__(self, name=None, base_path="experiments/"):
         self.base_path = base_path
+        self.model = None
+        self.params = None
+        self.history = None
 
         if name is None:
             # Create an experiment
@@ -30,10 +33,23 @@ class Experiment:
             self.model_dir = os.path.join(self.main_dir, 'model')
             self.vis_dir = os.path.join(self.main_dir, 'vis')
 
-    def load_model(self):
-        return keras.models.load_model(os.path.join(self.model_dir, 'model'))
+            with open(os.path.join(self.main_dir, 'params.pckl'), 'rb') as f:
+                self.params = pickle.load(f)
 
-    def save(self, model=None, history=None, params=None):
+            with open(os.path.join(self.main_dir, 'history.pckl'), 'rb') as f:
+                self.history = pickle.load(f)
+
+    def load_model(self):
+        self.model = keras.models.load_model(os.path.join(self.model_dir, 'model'))
+        return self.model
+
+    def save(self, params, model=None, history=None):
+        if params is not None:
+            with open(os.path.join(self.main_dir, 'params.pckl'), 'wb') as f:
+                pickle.dump(params, f)
+            with open(os.path.join(self.main_dir, 'params.txt'), 'w') as f:
+                for key, value in params.items():
+                    f.write("%s: %s\n" % (key, str(value)))
         if model is not None:
             model.encoder.save(os.path.join(self.model_dir, 'encoder'))
             model.decoder.save(os.path.join(self.model_dir, 'decoder'))
@@ -41,12 +57,6 @@ class Experiment:
         if history is not None:
             with open(os.path.join(self.main_dir, 'history.pckl'), 'wb') as f:
                 pickle.dump(history, f)
-        if params is not None:
-            with open(os.path.join(self.main_dir, 'params.pckl'), 'wb') as f:
-                pickle.dump(params, f)
-            with open(os.path.join(self.main_dir, 'params.txt'), 'w') as f:
-                for key, value in params.items():
-                    f.write("%s: %s\n" % (key, str(value)))
 
     def plot(self, train_loss, val_loss):
         plt.figure()
