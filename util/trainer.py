@@ -93,7 +93,7 @@ class Trainer:
                     print("step %d: mean loss = %.4f" % (step, self.train_loss_tracker.result()))
 
             train_loss.append(self.train_loss_tracker.result())
-            self.train_loss_tracker.reset_states()  # Reset training metrics at the end of each epoch
+            self.train_loss_tracker.reset_state()  # Reset training metrics at the end of each epoch
 
             # Validation Dataset
             for step, x_batch_val in enumerate(val_ds):
@@ -103,7 +103,7 @@ class Trainer:
                     print("val step %d: mean loss = %.4f" % (step, self.val_loss_tracker.result()))
 
             val_loss.append(self.val_loss_tracker.result())
-            self.val_loss_tracker.reset_states()
+            self.val_loss_tracker.reset_state()
 
             print("Time taken: %.2fs" % (time.time() - start_time))
             if self.train_stop.check_stop_training(val_loss):
