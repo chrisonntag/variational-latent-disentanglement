@@ -99,7 +99,7 @@ class Trainer:
         with tf.GradientTape() as tape:
             x_reconstruction = self.model(x_batch)
 
-            rec_los = tf.math.reduce_mean(MSELoss()(x_batch, x_reconstruction))
+            rec_los = tf.math.reduce_mean(keras.losses.MeanSquaredError()(x_batch, x_reconstruction))
             kl_loss = tf.math.reduce_mean(KullbackLeiblerDivergence()(self.model.z_mean, self.model.z_log_var))
 
             total_loss = rec_los + self.model.beta * kl_loss
@@ -113,7 +113,7 @@ class Trainer:
     def val_step(self, x_batch):
         x_reconstruction = self.model(x_batch)
 
-        rec_los = tf.math.reduce_mean(MSELoss()(x_batch, x_reconstruction))
+        rec_los = tf.math.reduce_mean(keras.losses.MeanSquaredError()(x_batch, x_reconstruction))
         kl_loss = tf.math.reduce_mean(KullbackLeiblerDivergence()(self.model.z_mean, self.model.z_log_var))
 
         total_loss = rec_los + self.model.beta * kl_loss

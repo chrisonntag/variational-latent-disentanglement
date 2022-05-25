@@ -1,6 +1,5 @@
 import tensorflow as tf
 from tensorflow import keras
-import keras.backend as K
 
 
 class Sampling(keras.layers.Layer):
@@ -31,11 +30,9 @@ class MSELoss(keras.layers.Layer):
     def __init__(self):
         super(MSELoss, self).__init__()
 
-    def call(self, y_true, y_pred, integrated=True):
-        if not integrated:
-            r_loss = tf.reduce_mean(tf.square(y_true - y_pred), axis=[1, 2, 3])
-            return 1000 * r_loss
-        return keras.losses.MeanSquaredError()(y_true, y_pred)
+    def call(self, y_true, y_pred):
+        r_loss = tf.reduce_mean(tf.square(y_true - y_pred), axis=[1, 2, 3])
+        return r_loss
 
 
 class KullbackLeiblerDivergence(keras.layers.Layer):
@@ -44,4 +41,4 @@ class KullbackLeiblerDivergence(keras.layers.Layer):
 
     def call(self, mean, log_var):
         kl = 1. + log_var - tf.square(mean) - tf.exp(log_var)
-        return -0.5 * tf.reduce_mean(kl, axis=-1)
+        return -0.5 * tf.reduce_sum(kl, axis=-1)
