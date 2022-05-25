@@ -62,8 +62,8 @@ for params in params_list:
     valid_ds = (tf.data.Dataset.from_tensor_slices(valid_images)).batch(params['batch_size'])
 
     # Create model and do Training
-    vae = VariationalAutoEncoderMNIST(z_dim=params['latent_dim'], beta=params['beta'], prior=log_normal_pdf)
-    trainer = Trainer(model=vae, params=params, optimizer=optimizer)
+    vae = VariationalAutoEncoderMNIST(z_dim=params['latent_dim'], beta=params['beta'])
+    trainer = Trainer(model=vae, params=params, optimizer=optimizer, prior=log_normal_pdf)
 
     train_history, val_history = trainer.train(train_ds, valid_ds)
     history = {"train_loss": train_history, "val_loss": val_history}

@@ -1,7 +1,7 @@
 import tensorflow as tf
+import tensorflow_probability as tfp
 from tensorflow import keras
-from model.layers.sampling import Sampling
-from model.distributions import log_normal_pdf
+from model.layers import Sampling
 
 
 class Encoder(keras.Model):
@@ -34,9 +34,8 @@ class Encoder(keras.Model):
 
         # Sample latent vector Q(z|X) by splitting the last dense layer which is by design 2*z_dim
         z_mean, z_log_var = tf.split(x, num_or_size_splits=2, axis=1)
-        z = self.sampling([z_mean, z_log_var])
 
-        return z_mean, z_log_var, z
+        return z_mean, z_log_var
 
 
 class Decoder(keras.Model):
@@ -73,51 +72,43 @@ class Decoder(keras.Model):
 
 
 class VariationalAutoEncoderMNIST(keras.Model):
-    def __init__(self, input_dim=(28, 28, 1), z_dim=10, beta=2, prior=log_normal_pdf):
+    def __init__(self, input_dim=(28, 28, 1), z_dim=10, beta=2):
         super(VariationalAutoEncoderMNIST, self).__init__(name="FashionVAE")
+        self.z = None
+        self.z_log_var = None
+        self.z_mean = None
         self.input_dim = input_dim
         self.z_dim = z_dim
         self.beta = beta
-        self.prior = prior
         self.encoder = Encoder(input_dim, z_dim)
         self.decoder = Decoder(input_dim, z_dim)
 
-    def compute_loss(self, x, analytic=True):
-        """
-        Optimize the single sample Monte Carlo estimate of this expectation:
-        log p(x|z) + log p(z) - log q(z|x), where z is sampled from q(z|x)
-        """
-        z_mean, z_log_var, z = self.encoder(x)  # samples z based on distribution of x: q(z|x) posterior distribution
-        reconstruction = self.decoder(z)  # p(x|z)
+    def encode(self, x):
+        z_mean, z_log_var = self.encoder(x)
+        return z_mean, z_log_var
 
-        # Reconstruction loss
-        # shape=(batch_size, 28, 28, 1), cross entropy between p(x|z) and x for each dim of every datapoint
-        cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(logits=reconstruction, labels=x)
-        # shape=(batch_size,), cross entropy for all instances in batch x, logp(x|z)
-        logpx_z = -tf.reduce_mean(tf.reduce_sum(cross_entropy, axis=[1, 2, 3]))
+    def encode_dist(self, x):
+        z_mean, z_log_var = self.encoder(x)
+        return tfp.distributions.MultivariateNormalDiag(loc=z_mean, scale_diag=z_log_var)
 
-        # KL Divergence logp(z) - logq(z|x), if we assume q to be a multivariate Gaussian distribution
-        if analytic:
-            kl_divergence = - 0.5 * tf.reduce_sum(
-                1. + z_log_var - tf.square(z_mean) - tf.exp(z_log_var), axis=1)  # shape=(batch_size, )
-            kl_divergence = tf.reduce_mean(kl_divergence)
-        else:
-            # Monte Carlo estimation from a single sample
-            logpz = self.prior(z, 0., 1.)  # prior, approximated with sampled z
-            logqz_x = self.prior(z, z_mean, z_log_var)  # posterior p(z|x) approximated by learnt q(z|x)
+    def reparameterize(self, z_mean, z_log_var):
+        # samples z based on distribution (z_mean, z_log_var) of x: q(z|x) posterior distribution
+        batch = tf.shape(z_mean)[0]
+        dim = tf.shape(z_mean)[1]
 
-            kl_divergence = logpz - logqz_x
+        epsilon = keras.backend.random_normal(shape=(batch, dim))
+        return z_mean + tf.exp(0.5 * z_log_var) * epsilon
 
-        # -mean( logp(x|z) + logp(z) - logq(z|x) )
-        elbo = logpx_z + self.beta * kl_divergence
-        return -elbo, reconstruction
-
-    def call(self, x):
-        total_loss, reconstruction = self.compute_loss(x, analytic=True)
-        self.add_loss(total_loss)
-
+    def decode(self, z):
+        reconstruction = self.decoder(z)
         return reconstruction
 
+    def call(self, inputs):
+        self.z_mean, self.z_log_var = self.encode(inputs)
+        self.z = self.reparameterize(self.z_mean, self.z_log_var)
+        outputs = self.decode(self.z)
+
+        return outputs
 
 
 

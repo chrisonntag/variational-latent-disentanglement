@@ -2,6 +2,8 @@ import tensorflow as tf
 import numpy as np
 from tensorflow import keras
 import time
+from model.distributions import log_normal_pdf
+from model.layers import KullbackLeiblerDivergence, MSELoss
 
 
 class Stopper:
@@ -45,11 +47,13 @@ class Stopper:
 
 
 class Trainer:
-    def __init__(self, model, params, optimizer):
+    def __init__(self, model, params, optimizer, prior=log_normal_pdf):
         self.model = model
         self.params = params
         self.optimizer = optimizer
         self.train_stop = Stopper(optimizer)
+
+        self.prior = prior
 
         self.train_loss_tracker = keras.metrics.Mean(name="train_loss")
         self.val_loss_tracker = keras.metrics.Mean(name="val_loss")
@@ -61,11 +65,44 @@ class Trainer:
             self.val_loss_tracker,
         ]
 
+    def compute_loss(self, x, analytic=True, training=True):
+        """
+        Optimize the single sample Monte Carlo estimate of this expectation:
+        log p(x|z) + log p(z) - log q(z|x), where z is sampled from q(z|x)
+        """
+        z_mean, z_log_var, z, reconstruction = self.model(x, training=training)
+
+        # Reconstruction loss
+        # shape=(batch_size, 28, 28, 1), cross entropy between p(x|z) and x for each dim of every datapoint
+        cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(logits=reconstruction, labels=x)
+        # shape=(batch_size,), cross entropy for all instances in batch x, logp(x|z)
+        logpx_z = -tf.reduce_mean(tf.reduce_sum(cross_entropy, axis=[1, 2, 3]))
+
+        # KL Divergence logp(z) - logq(z|x), if we assume q to be a multivariate Gaussian distribution
+        if analytic:
+            kl_divergence = - 0.5 * tf.reduce_sum(
+                1. + z_log_var - tf.square(z_mean) - tf.exp(z_log_var), axis=1)  # shape=(batch_size, )
+            kl_divergence = tf.reduce_mean(kl_divergence)
+        else:
+            # Monte Carlo estimation from a single sample
+            logpz = self.prior(z, 0., 1.)  # prior, approximated with sampled z
+            logqz_x = self.prior(z, z_mean, z_log_var)  # posterior p(z|x) approximated by learnt q(z|x)
+
+            kl_divergence = logpz - logqz_x
+
+        # -mean( logp(x|z) + logp(z) - logq(z|x) )
+        elbo = logpx_z + self.model.beta * kl_divergence
+        return -elbo, reconstruction
+
     @tf.function
     def train_step(self, x_batch):
         with tf.GradientTape() as tape:
-            reconstruction = self.model(x_batch, training=True)
-            total_loss = sum(self.model.losses)
+            x_reconstruction = self.model(x_batch)
+
+            rec_los = tf.math.reduce_mean(MSELoss()(x_batch, x_reconstruction))
+            kl_loss = tf.math.reduce_mean(KullbackLeiblerDivergence()(self.model.z_mean, self.model.z_log_var))
+
+            total_loss = rec_los + self.model.beta * kl_loss
 
         grads = tape.gradient(total_loss, self.model.trainable_weights)
         self.optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
@@ -74,8 +111,12 @@ class Trainer:
 
     @tf.function
     def val_step(self, x_batch):
-        reconstruction = self.model(x_batch, training=False)
-        total_loss = sum(self.model.losses)
+        x_reconstruction = self.model(x_batch)
+
+        rec_los = tf.math.reduce_mean(MSELoss()(x_batch, x_reconstruction))
+        kl_loss = tf.math.reduce_mean(KullbackLeiblerDivergence()(self.model.z_mean, self.model.z_log_var))
+
+        total_loss = rec_los + self.model.beta * kl_loss
         return total_loss
 
     def train(self, train_ds, val_ds):
