@@ -49,7 +49,7 @@ def plot_latent_space(model, out_dir, n=30, figsize=15, title="Latent space exam
 
 def plot_label_clusters(model, data, labels, out_dir, title="Latent Clustering", show=False):
     # display a 2D plot of the digit classes in the latent space
-    z_mean, _, _ = model.encoder(data)
+    z_mean, _ = model.encoder(data)
     plt.figure(figsize=(12, 10))
     cmap = plt.get_cmap('tab20', len(class_names))
     plt.scatter(z_mean[:, 0], z_mean[:, 1], c=labels, cmap=cmap)

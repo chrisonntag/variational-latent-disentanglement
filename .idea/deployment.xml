@@ -8,8 +8,13 @@
             <mapping deploy="/P2_Sonntag" local="$PROJECT_DIR$" web="/" />
           </mappings>
           <excludedPaths>
-            <excludedPath path="/P2_Sonntag/experiments" />
-            <excludedPath local="true" path="$PROJECT_DIR$/experiments" />
+            <excludedPath path="/P2_Sonntag/env" />
+            <excludedPath path="/P2_Sonntag/.git" />
+            <excludedPath path="/P2_Sonntag/.idea" />
+            <excludedPath local="true" path="$PROJECT_DIR$/env" />
+            <excludedPath local="true" path="$PROJECT_DIR$/parts" />
+            <excludedPath local="true" path="$PROJECT_DIR$/.git" />
+            <excludedPath local="true" path="$PROJECT_DIR$/.idea" />
           </excludedPaths>
         </serverdata>
       </paths>

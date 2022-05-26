@@ -34,8 +34,8 @@ train_images = tf.expand_dims(train_images, axis=-1)
 valid_images = tf.expand_dims(valid_images, axis=-1)
 
 # Setup training
-betas = [2, 4, 8, 10]
-dims = [2, 3, 8, 12]
+betas = [2, 4]
+dims = [2, 3, 9, 128]
 
 params_list = []
 for b in betas:
@@ -45,8 +45,8 @@ for b in betas:
         params_list.append(
             {
                 "optimizer": "Adam",
-                "learning_rate": 1e-1,
-                "epochs": 12,
+                "learning_rate": 1e-3,
+                "epochs": 30,
                 "batch_size": 32,
                 "latent_dim": dim,
                 "beta": b,
