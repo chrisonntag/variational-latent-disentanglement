@@ -36,6 +36,7 @@ valid_images = tf.expand_dims(valid_images, axis=-1)
 # Setup training
 betas = [2, 4]
 dims = [2, 3, 9, 128]
+test_run_name = "advarch"
 
 params_list = []
 for b in betas:
@@ -68,7 +69,7 @@ for params in params_list:
     train_history, val_history = trainer.train(train_ds, valid_ds)
     history = {"train_loss": train_history, "val_loss": val_history}
 
-    experiment = Experiment(base_path="experiments/")
+    experiment = Experiment(base_path="experiments/" + test_run_name)
     experiment.save(params, model=vae, history=history)
     experiment.plot(history['train_loss'], history['val_loss'])
 

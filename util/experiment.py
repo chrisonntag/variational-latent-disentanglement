@@ -15,9 +15,12 @@ class Experiment:
         self.params = None
         self.history = None
 
+        if not pathlib.Path(self.base_path).exists():
+            pathlib.Path(self.base_path).mkdir(parents=True, exist_ok=True)
+
         if name is None:
             # Create an experiment
-            self.name = "%s_%s" % (datetime.now().strftime("%d-%m-%Y_%H%M"), generate_id(seed=uuid.uuid4()))
+            self.name = "%s_%s" % (datetime.now().strftime("%H%M"), generate_id(seed=uuid.uuid4()))
             self.main_dir = os.path.join(self.base_path, self.name)
             pathlib.Path(self.main_dir).mkdir(parents=True, exist_ok=True)
 
