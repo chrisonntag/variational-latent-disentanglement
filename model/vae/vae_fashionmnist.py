@@ -30,7 +30,6 @@ class Encoder(keras.Model):
             ],
             name="Encoder"
         )
-        encoder.summary()
         return encoder
 
     def call(self, inputs):
@@ -71,7 +70,6 @@ class Decoder(keras.Model):
             ],
             name="Decoder"
         )
-        decoder.summary()
 
         return decoder
 
@@ -90,6 +88,13 @@ class VariationalAutoEncoderMNIST(keras.Model):
         self.beta = beta
         self.encoder = Encoder(input_dim, z_dim)
         self.decoder = Decoder(input_dim, z_dim)
+
+    @classmethod
+    def from_saved_model(cls, model, params):
+        instance = cls(input_dim=params['input_dim'], z_dim=params['z_dim'], beta=params['beta'])
+        instance.encoder = model.encoder
+        instance.decoder = model.decoder
+        return instance
 
     def encode(self, x):
         z_mean, z_log_var = self.encoder(x)

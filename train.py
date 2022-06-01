@@ -8,7 +8,7 @@ from util.trainer import Trainer
 from model.distributions import log_normal_pdf
 
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = "true"
-os.environ["CUDA_VISIBLE_DEVICES"] = '0,1'  # Set to -1 if CPU should be used CPU = -1 , GPU = 0
+os.environ["CUDA_VISIBLE_DEVICES"] = '1'  # Set to -1 if CPU should be used CPU = -1 , GPU = 0
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
@@ -34,9 +34,9 @@ train_images = tf.expand_dims(train_images, axis=-1)
 valid_images = tf.expand_dims(valid_images, axis=-1)
 
 # Setup training
-betas = [2, 4]
-dims = [2, 3, 9, 128]
-test_run_name = "advarch"
+betas = [2, 4, 8]
+dims = [2, 3, 9, 64, 128]
+test_run_name = "batchNormArch"
 
 params_list = []
 for b in betas:
