@@ -34,7 +34,7 @@ train_images = tf.expand_dims(train_images, axis=-1)
 valid_images = tf.expand_dims(valid_images, axis=-1)
 
 # Setup training
-betas = [2, 4, 8]
+betas = [0.5, 1, 2, 8]
 dims = [2, 3, 9, 64, 128]
 test_run_name = "batchNormArch"
 
@@ -66,8 +66,7 @@ for params in params_list:
     vae = VariationalAutoEncoderMNIST(z_dim=params['latent_dim'], beta=params['beta'])
     trainer = Trainer(model=vae, params=params, optimizer=optimizer, prior=log_normal_pdf)
 
-    train_history, val_history = trainer.train(train_ds, valid_ds)
-    history = {"train_loss": train_history, "val_loss": val_history}
+    history = trainer.train(train_ds, valid_ds)  # Returns a dict
 
     experiment = Experiment(base_path="experiments/" + test_run_name)
     experiment.save(params, model=vae, history=history)
