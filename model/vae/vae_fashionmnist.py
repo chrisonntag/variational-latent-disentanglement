@@ -17,16 +17,19 @@ class Encoder(keras.Model):
             [
                 tf.keras.layers.InputLayer(input_shape=self.input_dim, name='encoder_input'),
                 tf.keras.layers.Conv2D(
-                    filters=32, kernel_size=3, strides=(2, 2), activation='relu'),
+                    filters=32, kernel_size=3, strides=(2, 2), activation=None),
+                tf.keras.layers.BatchNormalization(),
+                tf.keras.layers.LeakyReLU(),
                 tf.keras.layers.Conv2D(
-                    filters=64, kernel_size=3, strides=(2, 2), activation='relu'),
+                    filters=64, kernel_size=3, strides=(2, 2), activation=None),
+                tf.keras.layers.BatchNormalization(),
+                tf.keras.layers.LeakyReLU(),
                 tf.keras.layers.Flatten(),
                 # No activation
                 tf.keras.layers.Dense(self.z_dim + self.z_dim),
             ],
             name="Encoder"
         )
-        encoder.summary()
         return encoder
 
     def call(self, inputs):
@@ -53,17 +56,20 @@ class Decoder(keras.Model):
                 tf.keras.layers.Reshape(target_shape=(7, 7, 32)),
                 tf.keras.layers.Conv2DTranspose(
                     filters=64, kernel_size=3, strides=2, padding='same',
-                    activation='relu'),
+                    activation=None),
+                tf.keras.layers.BatchNormalization(),
+                tf.keras.layers.LeakyReLU(),
                 tf.keras.layers.Conv2DTranspose(
                     filters=32, kernel_size=3, strides=2, padding='same',
-                    activation='relu'),
+                    activation=None),
+                tf.keras.layers.BatchNormalization(),
+                tf.keras.layers.LeakyReLU(),
                 # No activation
                 tf.keras.layers.Conv2DTranspose(
                     filters=1, kernel_size=3, strides=1, padding='same'),
             ],
             name="Decoder"
         )
-        decoder.summary()
 
         return decoder
 
@@ -82,6 +88,13 @@ class VariationalAutoEncoderMNIST(keras.Model):
         self.beta = beta
         self.encoder = Encoder(input_dim, z_dim)
         self.decoder = Decoder(input_dim, z_dim)
+
+    @classmethod
+    def from_saved_model(cls, model, params):
+        instance = cls(input_dim=params['input_dim'], z_dim=params['z_dim'], beta=params['beta'])
+        instance.encoder = model.encoder
+        instance.decoder = model.decoder
+        return instance
 
     def encode(self, x):
         z_mean, z_log_var = self.encoder(x)
