@@ -3,7 +3,7 @@ import numpy as np
 from tensorflow import keras
 import time
 from model.distributions import log_normal_pdf
-from model.layers import KullbackLeiblerDivergence, MSELoss, SigmoidCrossEntropy
+import model.layers as layers
 
 
 class Stopper:
@@ -13,7 +13,7 @@ class Stopper:
 
     Source: https://github.com/kingusiu/vande/blob/master/training.py
     """
-    def __init__(self, optimizer, min_delta=0.01, patience=4, max_lr_decay=10, lr_decay_factor=0.3):
+    def __init__(self, optimizer, min_delta=0.001, patience=4, max_lr_decay=10, lr_decay_factor=0.2):
         self.optimizer = optimizer
         self.min_delta = min_delta
         self.patience = patience
@@ -84,29 +84,30 @@ class Trainer:
         with tf.GradientTape() as tape:
             x_reconstruction = self.model(x_batch)
 
-            rec_los = keras.losses.MeanSquaredError()(x_batch, x_reconstruction)
-            kl_loss = KullbackLeiblerDivergence()(
+            # rec_loss = keras.losses.MeanSquaredError()(x_batch, x_reconstruction)
+            rec_loss = layers.MSELoss()(x_batch, x_reconstruction)
+            kl_loss = layers.KullbackLeiblerDivergence()(
                 self.model.z, self.model.z_mean, self.model.z_log_var, analytical=True, prior=self.prior
             )
 
-            total_loss = tf.reduce_mean(rec_los) + self.model.beta * tf.reduce_mean(kl_loss)
+            total_loss = rec_loss + self.model.beta * kl_loss
 
         grads = tape.gradient(total_loss, self.model.trainable_weights)
         self.optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
 
-        return total_loss, rec_los, kl_loss
+        return total_loss, rec_loss, kl_loss
 
     @tf.function
     def val_step(self, x_batch):
         x_reconstruction = self.model(x_batch, training=False)
 
-        rec_los = tf.math.reduce_mean(keras.losses.MeanSquaredError()(x_batch, x_reconstruction))
-        kl_loss = tf.math.reduce_mean(KullbackLeiblerDivergence()(
+        rec_loss = layers.MSELoss()(x_batch, x_reconstruction)
+        kl_loss = layers.KullbackLeiblerDivergence()(
             self.model.z, self.model.z_mean, self.model.z_log_var, analytical=True, prior=self.prior
-        ))
+        )
 
-        total_loss = rec_los + self.model.beta * kl_loss
-        return total_loss, rec_los, kl_loss
+        total_loss = rec_loss + self.model.beta * kl_loss
+        return total_loss, rec_loss, kl_loss
 
     def train(self, train_ds, val_ds):
         train_total_loss = []
@@ -136,6 +137,7 @@ class Trainer:
 
             train_total_loss.append(self.train_total_loss_tracker.result())
             train_rec_loss.append(self.train_rec_loss_tracker.result())
+            train_kl_loss.append(self.train_kl_loss_tracker.result())
 
             # Reset training metrics at the end of each epoch
             self.train_total_loss_tracker.reset_state()
@@ -144,7 +146,6 @@ class Trainer:
 
             # Validation Dataset
             for step, x_batch_val in enumerate(val_ds):
-                loss = self.val_step(x_batch_val)
                 total_loss, rec_loss, kl_loss = self.val_step(x_batch_val)
                 self.val_total_loss_tracker.update_state(total_loss)
                 self.val_rec_loss_tracker.update_state(rec_loss)

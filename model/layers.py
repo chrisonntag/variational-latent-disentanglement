@@ -49,6 +49,15 @@ class SigmoidCrossEntropy(keras.layers.Layer):
         return tf.reduce_mean(tf.reduce_sum(cross_entropy, axis=[1, 2, 3]))
 
 
+class BinaryCrossEntropy(keras.layers.Layer):
+    def __init__(self):
+        super(BinaryCrossEntropy, self).__init__()
+
+    def call(self, y_true, y_pred):
+        cross_entropy = keras.backend.binary_crossentropy(y_true, y_pred)
+        return tf.reduce_sum(cross_entropy, axis=-1)
+
+
 class KullbackLeiblerDivergence(keras.layers.Layer):
     def __init__(self):
         super(KullbackLeiblerDivergence, self).__init__()
@@ -56,7 +65,7 @@ class KullbackLeiblerDivergence(keras.layers.Layer):
     def call(self, sample, mean, log_var, analytical=True, prior=log_normal_pdf):
         if analytical:
             kl = 1. + log_var - tf.square(mean) - tf.exp(log_var)
-            kl = -0.5 * tf.reduce_sum(kl, axis=-1)
+            kl = -0.5 * tf.reduce_sum(kl, axis=1)
         else:
             # Monte Carlo estimation from a single sample
             logpz = prior(sample, 0., 1.)  # prior, approximated with sampled z

@@ -110,6 +110,8 @@ class VariationalAutoEncoderMNIST(keras.Model):
         dim = tf.shape(z_mean)[1]
 
         epsilon = keras.backend.random_normal(shape=(batch, dim))
+
+        # transfor z_log_var to stddev
         return z_mean + tf.exp(0.5 * z_log_var) * epsilon
 
     def decode(self, z):

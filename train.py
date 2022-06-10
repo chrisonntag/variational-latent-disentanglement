@@ -6,6 +6,7 @@ from model.vae.vae_fashionmnist import VariationalAutoEncoderMNIST
 from util.experiment import Experiment
 from util.trainer import Trainer
 from model.distributions import log_normal_pdf
+from model.classification import Classifier
 
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = "true"
 os.environ["CUDA_VISIBLE_DEVICES"] = '1'  # Set to -1 if CPU should be used CPU = -1 , GPU = 0
@@ -34,9 +35,9 @@ train_images = tf.expand_dims(train_images, axis=-1)
 valid_images = tf.expand_dims(valid_images, axis=-1)
 
 # Setup training
-betas = [0.5, 1, 2, 8]
-dims = [2, 3, 9, 64, 128]
-test_run_name = "batchNormArch"
+betas = [0.1, 1, 2, 4, 8]
+dims = [2, 4, 10, 16]
+test_run_name = "preTrainer"
 
 params_list = []
 for b in betas:
@@ -62,8 +63,23 @@ for params in params_list:
     train_ds = (tf.data.Dataset.from_tensor_slices(train_images)).shuffle(buffer_size=1024).batch(params['batch_size'])
     valid_ds = (tf.data.Dataset.from_tensor_slices(valid_images)).batch(params['batch_size'])
 
-    # Create model and do Training
+    # Pre-train encoder as a classifier
+    classifier = Classifier()
+    classifier.compile(optimizer=optimizer,
+                       loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                       metrics=['accuracy'])
+    classifier.fit(train_images, train_labels, epochs=1)
+
+    test_loss, test_acc = classifier.evaluate(valid_images, valid_labels, verbose=2)
+    print('\nTest accuracy:', test_acc)
+
+    # Create VAE model and do Training
+    last_layer = tf.keras.layers.Dense(params['latent_dim'] * 2)(classifier.model.layers[-2].output)
+    inj_encoder = tf.keras.Model(inputs=classifier.model.input, outputs=[last_layer])
+
     vae = VariationalAutoEncoderMNIST(z_dim=params['latent_dim'], beta=params['beta'])
+    vae.encoder.model = inj_encoder
+
     trainer = Trainer(model=vae, params=params, optimizer=optimizer, prior=log_normal_pdf)
 
     history = trainer.train(train_ds, valid_ds)  # Returns a dict
