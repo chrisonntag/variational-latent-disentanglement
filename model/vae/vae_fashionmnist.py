@@ -78,7 +78,7 @@ class Decoder(keras.Model):
 
 
 class VariationalAutoEncoderMNIST(keras.Model):
-    def __init__(self, input_dim=(28, 28, 1), z_dim=10, beta=2):
+    def __init__(self, input_dim=(28, 28, 1), z_dim=10, beta=2, with_classifier=False):
         super(VariationalAutoEncoderMNIST, self).__init__(name="FashionVAE")
         self.z = None
         self.z_log_var = None
@@ -88,6 +88,12 @@ class VariationalAutoEncoderMNIST(keras.Model):
         self.beta = beta
         self.encoder = Encoder(input_dim, z_dim)
         self.decoder = Decoder(input_dim, z_dim)
+        self.with_classifier = with_classifier
+
+        if with_classifier:
+            classifier_input = tf.keras.Input(shape=(self.z_dim,), name='classifier_input')
+            classifier_output = tf.keras.layers.Dense(10, activation='softmax', name='classifier_output')(classifier_input)
+            self.classifier = keras.Model(classifier_input, classifier_output, name='classifier')
 
     @classmethod
     def from_saved_model(cls, model, params):
@@ -123,7 +129,8 @@ class VariationalAutoEncoderMNIST(keras.Model):
         self.z = self.reparameterize(self.z_mean, self.z_log_var)
         outputs = self.decode(self.z)
 
+        if self.with_classifier:
+            classification = self.classifier(self.z)
+            return [outputs, classification]
+
         return outputs
-
-
-

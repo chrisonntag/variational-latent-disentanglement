@@ -15,8 +15,6 @@
             <excludedPath local="true" path="$PROJECT_DIR$/parts" />
             <excludedPath local="true" path="$PROJECT_DIR$/.git" />
             <excludedPath local="true" path="$PROJECT_DIR$/.idea" />
-            <excludedPath path="/P2_Sonntag/experiments" />
-            <excludedPath local="true" path="$PROJECT_DIR$/experiments" />
           </excludedPaths>
         </serverdata>
       </paths>

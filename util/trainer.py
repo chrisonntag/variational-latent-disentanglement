@@ -80,9 +80,17 @@ class Trainer:
         ]
 
     @tf.function
-    def train_step(self, x_batch):
+    def train_step(self, batch):
+        x_batch = batch[0]
+        y_batch = batch[1]
+
         with tf.GradientTape() as tape:
-            x_reconstruction = self.model(x_batch)
+            if self.model.with_classifier:
+                outputs = self.model(x_batch)
+                x_reconstruction = outputs[0]
+                y_pred = outputs[1]
+            else:
+                x_reconstruction = self.model(x_batch, training=True)
 
             # rec_loss = keras.losses.MeanSquaredError()(x_batch, x_reconstruction)
             rec_loss = layers.MSELoss()(x_batch, x_reconstruction)
@@ -92,14 +100,26 @@ class Trainer:
 
             total_loss = rec_loss + self.model.beta * kl_loss
 
+            if self.model.with_classifier:
+                loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+                total_loss += loss_fn(y_batch, y_pred)
+
         grads = tape.gradient(total_loss, self.model.trainable_weights)
         self.optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
 
         return total_loss, rec_loss, kl_loss
 
     @tf.function
-    def val_step(self, x_batch):
-        x_reconstruction = self.model(x_batch, training=False)
+    def val_step(self, batch):
+        x_batch = batch[0]
+        y_batch = batch[1]
+
+        if self.model.with_classifier:
+            outputs = self.model(x_batch, training=False)
+            x_reconstruction = outputs[0]
+            y_pred = outputs[1]
+        else:
+            x_reconstruction = self.model(x_batch, training=False)
 
         rec_loss = layers.MSELoss()(x_batch, x_reconstruction)
         kl_loss = layers.KullbackLeiblerDivergence()(
@@ -107,6 +127,11 @@ class Trainer:
         )
 
         total_loss = rec_loss + self.model.beta * kl_loss
+
+        if self.model.with_classifier:
+            loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+            total_loss += loss_fn(y_batch, y_pred)
+
         return total_loss, rec_loss, kl_loss
 
     def train(self, train_ds, val_ds):
@@ -122,8 +147,8 @@ class Trainer:
             start_time = time.time()
 
             # Train Dataset
-            for step, x_batch_train in enumerate(train_ds):
-                total_loss, rec_loss, kl_loss = self.train_step(x_batch_train)
+            for step, batch_train in enumerate(train_ds):
+                total_loss, rec_loss, kl_loss = self.train_step(batch_train)
                 self.train_total_loss_tracker.update_state(total_loss)
                 self.train_rec_loss_tracker.update_state(rec_loss)
                 self.train_kl_loss_tracker.update_state(kl_loss)
@@ -145,8 +170,8 @@ class Trainer:
             self.train_kl_loss_tracker.reset_state()
 
             # Validation Dataset
-            for step, x_batch_val in enumerate(val_ds):
-                total_loss, rec_loss, kl_loss = self.val_step(x_batch_val)
+            for step, batch_val in enumerate(val_ds):
+                total_loss, rec_loss, kl_loss = self.val_step(batch_val)
                 self.val_total_loss_tracker.update_state(total_loss)
                 self.val_rec_loss_tracker.update_state(rec_loss)
                 self.val_kl_loss_tracker.update_state(kl_loss)

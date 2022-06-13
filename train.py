@@ -27,6 +27,9 @@ class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
                'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 (train_images, train_labels), (valid_images, valid_labels) = fashion_mnist.load_data()
 
+#train_labels = keras.utils.to_categorical(train_labels)
+#valid_labels = keras.utils.to_categorical(valid_labels)
+
 train_images = train_images.astype('float32') / 255.0
 valid_images = valid_images.astype('float32') / 255.0
 
@@ -37,7 +40,9 @@ valid_images = tf.expand_dims(valid_images, axis=-1)
 # Setup training
 betas = [0.1, 1, 2, 4, 8]
 dims = [2, 4, 10, 16]
-test_run_name = "preTrainer"
+pretrain = False
+with_classifier = True
+test_run_name = "withClassifier"
 
 params_list = []
 for b in betas:
@@ -60,25 +65,26 @@ for params in params_list:
     optimizer = optimizers[params['optimizer']]
 
     # Create dataset - only needed for manual training
-    train_ds = (tf.data.Dataset.from_tensor_slices(train_images)).shuffle(buffer_size=1024).batch(params['batch_size'])
-    valid_ds = (tf.data.Dataset.from_tensor_slices(valid_images)).batch(params['batch_size'])
+    train_ds = (tf.data.Dataset.from_tensor_slices((train_images, train_labels))).shuffle(buffer_size=1024).batch(params['batch_size'])
+    valid_ds = (tf.data.Dataset.from_tensor_slices((valid_images, valid_labels))).batch(params['batch_size'])
+
+    vae = VariationalAutoEncoderMNIST(z_dim=params['latent_dim'], beta=params['beta'], with_classifier=with_classifier)
 
     # Pre-train encoder as a classifier
-    classifier = Classifier()
-    classifier.compile(optimizer=optimizer,
-                       loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-                       metrics=['accuracy'])
-    classifier.fit(train_images, train_labels, epochs=1)
+    if pretrain:
+        classifier = Classifier()
+        classifier.compile(optimizer=optimizer,
+                           loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                           metrics=['accuracy'])
+        classifier.fit(train_images, train_labels, epochs=1)
 
-    test_loss, test_acc = classifier.evaluate(valid_images, valid_labels, verbose=2)
-    print('\nTest accuracy:', test_acc)
+        test_loss, test_acc = classifier.evaluate(valid_images, valid_labels, verbose=2)
+        print('\nTest accuracy:', test_acc)
+        # Create VAE model and do Training
+        last_layer = tf.keras.layers.Dense(params['latent_dim'] * 2)(classifier.model.layers[-2].output)
+        inj_encoder = tf.keras.Model(inputs=classifier.model.input, outputs=[last_layer])
 
-    # Create VAE model and do Training
-    last_layer = tf.keras.layers.Dense(params['latent_dim'] * 2)(classifier.model.layers[-2].output)
-    inj_encoder = tf.keras.Model(inputs=classifier.model.input, outputs=[last_layer])
-
-    vae = VariationalAutoEncoderMNIST(z_dim=params['latent_dim'], beta=params['beta'])
-    vae.encoder.model = inj_encoder
+        vae.encoder.model = inj_encoder
 
     trainer = Trainer(model=vae, params=params, optimizer=optimizer, prior=log_normal_pdf)
 
