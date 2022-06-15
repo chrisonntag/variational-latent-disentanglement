@@ -9,7 +9,7 @@ from model.distributions import log_normal_pdf
 from model.classification import Classifier
 
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = "true"
-os.environ["CUDA_VISIBLE_DEVICES"] = '1'  # Set to -1 if CPU should be used CPU = -1 , GPU = 0
+os.environ["CUDA_VISIBLE_DEVICES"] = '0,1'  # Set to -1 if CPU should be used CPU = -1 , GPU = 0
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:

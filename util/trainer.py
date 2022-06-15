@@ -101,7 +101,7 @@ class Trainer:
             total_loss = rec_loss + self.model.beta * kl_loss
 
             if self.model.with_classifier:
-                loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+                loss_fn = tf.keras.losses.SparseCategoricalCrossentropy()
                 total_loss += loss_fn(y_batch, y_pred)
 
         grads = tape.gradient(total_loss, self.model.trainable_weights)
