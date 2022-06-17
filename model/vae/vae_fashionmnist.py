@@ -9,36 +9,58 @@ class Encoder(keras.Model):
         super(Encoder, self).__init__(name=name, **kwargs)
         self.input_dim = input_dim
         self.z_dim = z_dim
-        self.model = self.build_encoder()
-        self.sampling = Sampling()
+        self.model = Encoder.build_encoder(self.input_dim, self.z_dim)
 
-    def build_encoder(self):
-        encoder = tf.keras.Sequential(
-            [
-                tf.keras.layers.InputLayer(input_shape=self.input_dim, name='encoder_input'),
-                tf.keras.layers.Conv2D(
-                    filters=32, kernel_size=3, strides=(2, 2), activation=None),
-                tf.keras.layers.BatchNormalization(),
-                tf.keras.layers.LeakyReLU(),
-                tf.keras.layers.Conv2D(
-                    filters=64, kernel_size=3, strides=(2, 2), activation=None),
-                tf.keras.layers.BatchNormalization(),
-                tf.keras.layers.LeakyReLU(),
-                tf.keras.layers.Flatten(),
-                # No activation
-                tf.keras.layers.Dense(self.z_dim + self.z_dim),
-            ],
-            name="Encoder"
+    @staticmethod
+    def build_classifier(inputs):
+        # Get input from last layer before the latent mean/logvar layer.
+        x = tf.keras.layers.Dense(128, activation='relu')(inputs)
+        x = tf.keras.layers.Dense(64, activation='relu')(x)
+        x = tf.keras.layers.Dense(10, activation='softmax', name='classifier_output')(x)
+
+        return x
+
+    @staticmethod
+    def build_latent_layer(inputs, z_dim):
+        x = tf.keras.layers.Dense(z_dim + z_dim)(inputs)
+
+        return x
+
+    @staticmethod
+    def build_main_encoder(inputs):
+        x = tf.keras.layers.Conv2D(
+            filters=32, kernel_size=3, strides=(2, 2), activation=None)(inputs)
+        x = tf.keras.layers.BatchNormalization()(x)
+        x = tf.keras.layers.LeakyReLU()(x)
+        x = tf.keras.layers.Conv2D(
+            filters=64, kernel_size=3, strides=(2, 2), activation=None)(x)
+        x = tf.keras.layers.BatchNormalization()(x)
+        x = tf.keras.layers.LeakyReLU()(x)
+        x = tf.keras.layers.Flatten()(x)
+
+        return x
+
+    @staticmethod
+    def build_encoder(input_shape, z_dim):
+        inputs = tf.keras.Input(shape=input_shape, name='encoder_input')
+        main_encoder = Encoder.build_main_encoder(inputs)
+        classifier = Encoder.build_classifier(main_encoder)
+        latent_layer = Encoder.build_latent_layer(main_encoder, z_dim)
+
+        model = keras.Model(
+            inputs=inputs,
+            outputs=[latent_layer, classifier]
         )
-        return encoder
+
+        return model
 
     def call(self, inputs):
-        x = self.model(inputs)
+        latent_layer, classification = self.model(inputs)
 
         # Sample latent vector Q(z|X) by splitting the last dense layer which is by design 2*z_dim
-        z_mean, z_log_var = tf.split(x, num_or_size_splits=2, axis=1)
+        z_mean, z_log_var = tf.split(latent_layer, num_or_size_splits=2, axis=1)
 
-        return z_mean, z_log_var
+        return z_mean, z_log_var, classification
 
 
 class Decoder(keras.Model):
@@ -78,7 +100,7 @@ class Decoder(keras.Model):
 
 
 class VariationalAutoEncoderMNIST(keras.Model):
-    def __init__(self, input_dim=(28, 28, 1), z_dim=10, beta=2, with_classifier=False):
+    def __init__(self, input_dim=(28, 28, 1), z_dim=10, beta=2):
         super(VariationalAutoEncoderMNIST, self).__init__(name="FashionVAE")
         self.z = None
         self.z_log_var = None
@@ -88,12 +110,6 @@ class VariationalAutoEncoderMNIST(keras.Model):
         self.beta = beta
         self.encoder = Encoder(input_dim, z_dim)
         self.decoder = Decoder(input_dim, z_dim)
-        self.with_classifier = with_classifier
-
-        if with_classifier:
-            classifier_input = tf.keras.Input(shape=(self.z_dim,), name='classifier_input')
-            classifier_output = tf.keras.layers.Dense(10, activation='softmax', name='classifier_output')(classifier_input)
-            self.classifier = keras.Model(classifier_input, classifier_output, name='classifier')
 
     @classmethod
     def from_saved_model(cls, model, params):
@@ -103,12 +119,13 @@ class VariationalAutoEncoderMNIST(keras.Model):
         return instance
 
     def encode(self, x):
-        z_mean, z_log_var = self.encoder(x)
-        return z_mean, z_log_var
+        z_mean, z_log_var, classification = self.encoder(x)
+        return z_mean, z_log_var, classification
 
     def encode_dist(self, x):
-        z_mean, z_log_var = self.encoder(x)
-        return tfp.distributions.MultivariateNormalDiag(loc=z_mean, scale_diag=z_log_var)
+        z_mean, z_log_var = self.encode(x)
+        return keras.backend.random_normal(
+            mean=z_mean, stddev=z_log_var, shape=(tf.shape(z_mean)[0], tf.shape(z_mean)[1]))
 
     def reparameterize(self, z_mean, z_log_var):
         # samples z based on distribution (z_mean, z_log_var) of x: q(z|x) posterior distribution
@@ -125,12 +142,9 @@ class VariationalAutoEncoderMNIST(keras.Model):
         return reconstruction
 
     def call(self, inputs):
-        self.z_mean, self.z_log_var = self.encode(inputs)
+        self.z_mean, self.z_log_var, classification = self.encode(inputs)
         self.z = self.reparameterize(self.z_mean, self.z_log_var)
         outputs = self.decode(self.z)
 
-        if self.with_classifier:
-            classification = self.classifier(self.z)
-            return [outputs, classification]
+        return [outputs, classification]
 
-        return outputs

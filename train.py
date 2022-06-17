@@ -68,7 +68,7 @@ for params in params_list:
     train_ds = (tf.data.Dataset.from_tensor_slices((train_images, train_labels))).shuffle(buffer_size=1024).batch(params['batch_size'])
     valid_ds = (tf.data.Dataset.from_tensor_slices((valid_images, valid_labels))).batch(params['batch_size'])
 
-    vae = VariationalAutoEncoderMNIST(z_dim=params['latent_dim'], beta=params['beta'], with_classifier=with_classifier)
+    vae = VariationalAutoEncoderMNIST(z_dim=params['latent_dim'], beta=params['beta'])
 
     # Pre-train encoder as a classifier
     if pretrain:
@@ -92,6 +92,5 @@ for params in params_list:
 
     experiment = Experiment(base_path="experiments/" + test_run_name)
     experiment.save(params, model=vae, history=history)
-    experiment.plot(history['train_loss'], history['val_loss'])
 
 
