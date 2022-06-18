@@ -1,0 +1,3 @@
+[submodule "variational-latent-vis"]
+	path = variational-latent-vis
+	url = https://github.com/chrisonntag/variational-latent-vis.git
