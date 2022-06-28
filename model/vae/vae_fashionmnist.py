@@ -1,7 +1,5 @@
 import tensorflow as tf
-import tensorflow_probability as tfp
 from tensorflow import keras
-from model.layers import Sampling
 
 
 class Encoder(keras.Model):
@@ -123,7 +121,7 @@ class VariationalAutoEncoderMNIST(keras.Model):
         return z_mean, z_log_var, classification
 
     def encode_dist(self, x):
-        z_mean, z_log_var = self.encode(x)
+        z_mean, z_log_var, _ = self.encode(x)
         return keras.backend.random_normal(
             mean=z_mean, stddev=z_log_var, shape=(tf.shape(z_mean)[0], tf.shape(z_mean)[1]))
 

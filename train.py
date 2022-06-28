@@ -38,11 +38,10 @@ train_images = tf.expand_dims(train_images, axis=-1)
 valid_images = tf.expand_dims(valid_images, axis=-1)
 
 # Setup training
-betas = [0.1, 1, 2, 4, 8]
-dims = [2, 4, 10, 16]
+betas = [2, 4, 8]
+dims = [4, 10]
 pretrain = False
-with_classifier = True
-test_run_name = "withClassifier"
+test_run_name = "branchedClassifier"
 
 params_list = []
 for b in betas:
