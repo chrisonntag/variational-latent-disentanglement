@@ -230,9 +230,10 @@ class CVAETrainer:
     def train_step(self, batch):
         x_batch = batch[0]
         y_batch = batch[1]
+        concat = self.model.concat_image_label(batch)
 
         with tf.GradientTape() as tape:
-            outputs = self.model(x_batch, y_batch)
+            outputs = self.model(concat)
             x_reconstruction = outputs
 
             # rec_loss = keras.losses.MeanSquaredError()(x_batch, x_reconstruction)
@@ -251,8 +252,9 @@ class CVAETrainer:
     def val_step(self, batch):
         x_batch = batch[0]
         y_batch = batch[1]
+        concat = self.model.concat_image_label(batch)
 
-        outputs = self.model(x_batch, y_batch, training=False)
+        outputs = self.model(concat, training=False)
         x_reconstruction = outputs
 
         rec_loss = layers.MSELoss()(x_batch, x_reconstruction)

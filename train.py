@@ -53,7 +53,7 @@ for b in betas:
             {
                 "optimizer": "Adam",
                 "learning_rate": 1e-3,
-                "epochs": 16,
+                "epochs": 12,
                 "batch_size": 32,
                 "latent_dim": dim,
                 "beta": b,
