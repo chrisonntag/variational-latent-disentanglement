@@ -97,9 +97,9 @@ class Decoder(keras.Model):
         return self.model(inputs)
 
 
-class VariationalAutoEncoderMNIST(keras.Model):
+class BranchedClassifierVAE(keras.Model):
     def __init__(self, input_dim=(28, 28, 1), z_dim=10, beta=2):
-        super(VariationalAutoEncoderMNIST, self).__init__(name="FashionVAE")
+        super(BranchedClassifierVAE, self).__init__(name="FashionVAE")
         self.z = None
         self.z_log_var = None
         self.z_mean = None

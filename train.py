@@ -2,9 +2,10 @@ import os
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
-from model.vae.vae_fashionmnist import VariationalAutoEncoderMNIST
+from model.vae.branched_classifier_vae import BranchedClassifierVAE
+from model.vae.conditional_vae import ConditionalVAE
 from util.experiment import Experiment
-from util.trainer import Trainer
+from util.trainer import BCVAETrainer, CVAETrainer
 from model.distributions import log_normal_pdf
 from model.classification import Classifier
 
@@ -27,8 +28,8 @@ class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
                'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 (train_images, train_labels), (valid_images, valid_labels) = fashion_mnist.load_data()
 
-#train_labels = keras.utils.to_categorical(train_labels)
-#valid_labels = keras.utils.to_categorical(valid_labels)
+train_labels = keras.utils.to_categorical(train_labels)
+valid_labels = keras.utils.to_categorical(valid_labels)
 
 train_images = train_images.astype('float32') / 255.0
 valid_images = valid_images.astype('float32') / 255.0
@@ -41,7 +42,7 @@ valid_images = tf.expand_dims(valid_images, axis=-1)
 betas = [2, 4, 8]
 dims = [4, 10]
 pretrain = False
-test_run_name = "branchedClassifier"
+test_run_name = "conditionalVAE"
 
 params_list = []
 for b in betas:
@@ -52,7 +53,7 @@ for b in betas:
             {
                 "optimizer": "Adam",
                 "learning_rate": 1e-3,
-                "epochs": 30,
+                "epochs": 16,
                 "batch_size": 32,
                 "latent_dim": dim,
                 "beta": b,
@@ -67,7 +68,7 @@ for params in params_list:
     train_ds = (tf.data.Dataset.from_tensor_slices((train_images, train_labels))).shuffle(buffer_size=1024).batch(params['batch_size'])
     valid_ds = (tf.data.Dataset.from_tensor_slices((valid_images, valid_labels))).batch(params['batch_size'])
 
-    vae = VariationalAutoEncoderMNIST(z_dim=params['latent_dim'], beta=params['beta'])
+    vae = ConditionalVAE(z_dim=params['latent_dim'], beta=params['beta'])
 
     # Pre-train encoder as a classifier
     if pretrain:
@@ -85,7 +86,10 @@ for params in params_list:
 
         vae.encoder.model = inj_encoder
 
-    trainer = Trainer(model=vae, params=params, optimizer=optimizer, prior=log_normal_pdf)
+    if type(vae).__name__ == "BranchedClassifierVAE":
+        trainer = BCVAETrainer(model=vae, params=params, optimizer=optimizer, prior=log_normal_pdf)
+    else:
+        trainer = CVAETrainer(model=vae, params=params, optimizer=optimizer, prior=log_normal_pdf)
 
     history = trainer.train(train_ds, valid_ds)  # Returns a dict
 
