@@ -1,3 +1,4 @@
+data/
 experiments/**
 .idea/deployment.xml
 .idea/webServers.xml

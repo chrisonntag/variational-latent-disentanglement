@@ -23,13 +23,21 @@ if gpus:
 
 
 # Download Dataset
-fashion_mnist = keras.datasets.fashion_mnist
-class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
+datasets = {
+    "fashion_mnist": {
+        "loader": keras.datasets.fashion_mnist,
+        "class_names": ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
                'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
-(train_images, train_labels), (valid_images, valid_labels) = fashion_mnist.load_data()
+    },
+    "mnist": {
+        "loader": keras.datasets.mnist,
+        "class_names": ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+    },
+}
+(train_images, train_labels), (valid_images, valid_labels) = datasets['mnist']['loader'].load_data()
 
-train_labels = keras.utils.to_categorical(train_labels)
-valid_labels = keras.utils.to_categorical(valid_labels)
+#train_labels = keras.utils.to_categorical(train_labels)
+#valid_labels = keras.utils.to_categorical(valid_labels)
 
 train_images = train_images.astype('float32') / 255.0
 valid_images = valid_images.astype('float32') / 255.0
@@ -42,7 +50,7 @@ valid_images = tf.expand_dims(valid_images, axis=-1)
 betas = [2, 4, 8]
 dims = [4, 10]
 pretrain = False
-test_run_name = "conditionalVAE"
+test_run_name = "branchedVAEMNIST"
 
 params_list = []
 for b in betas:
@@ -52,8 +60,8 @@ for b in betas:
         params_list.append(
             {
                 "optimizer": "Adam",
-                "learning_rate": 1e-3,
-                "epochs": 12,
+                "learning_rate": 1e-4,
+                "epochs": 9,
                 "batch_size": 32,
                 "latent_dim": dim,
                 "beta": b,
@@ -68,7 +76,7 @@ for params in params_list:
     train_ds = (tf.data.Dataset.from_tensor_slices((train_images, train_labels))).shuffle(buffer_size=1024).batch(params['batch_size'])
     valid_ds = (tf.data.Dataset.from_tensor_slices((valid_images, valid_labels))).batch(params['batch_size'])
 
-    vae = ConditionalVAE(z_dim=params['latent_dim'], beta=params['beta'])
+    vae = BranchedClassifierVAE(z_dim=params['latent_dim'], beta=params['beta'])
 
     # Pre-train encoder as a classifier
     if pretrain:
