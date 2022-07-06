@@ -104,7 +104,7 @@ class ConditionalVAE(keras.Model):
 
     @classmethod
     def from_saved_model(cls, model, params):
-        instance = cls(input_dim=params['input_dim'], z_dim=params['z_dim'], beta=params['beta'])
+        instance = cls(input_dim=params['input_dim'], label_dim=params['label_dim'], z_dim=params['z_dim'], beta=params['beta'])
         instance.encoder = model.encoder
         instance.decoder = model.decoder
         return instance
