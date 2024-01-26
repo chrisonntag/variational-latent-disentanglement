@@ -16,11 +16,29 @@ interpretation is not intuitively possible – even in human-understandable two-
 addition to that, variables do not correspond with individual features of the input space directly but
 may resemble combinations of multiple ones. 
 
-Therefore, imposing structure on latent spaces may help
-to further understand hidden relationships in data. This project will focus on two individual parts:
-The review, proposal and qualitative evaluation of methods for disentanglement and the building of a
-hierarchical structure on latent spaces and possible visualizations that help users to understand abstract
-representations of data which should also be interpretable by non-expert users.
+Therefore, imposing structure on latent spaces may help 
+to further understand hidden relationships in data. This project focuses on two individual parts: 
+
+- Imposing structure to the latent space by adapting the training process and architecture of the model
+- Creating an interactive visualization for exploring the latent space
+
+## Architectures
+### Conditional VAE
+In a conditional VAE, the input sample is concatenated with the class label during the encoding-decoding process. 
+This means the encoder samples from ```P(z|x, c)``` instead of ```P(z|x)```. 
+
+![Encoder of a Conditional VAE](https://github.com/chrisonntag/variational-latent-disentanglement/blob/main/assets/images/architecture/conditional_encoder.png?raw=true)
+
+### Branched Classifier
+In this architecture, the idea was to introduce a third loss, that optimizes a separate branch as an classifier.
+
+![Encoder of a VAE with a branched classifier](https://github.com/chrisonntag/variational-latent-disentanglement/blob/main/assets/images/architecture/model_encoder.png?raw=true)
+
+## Interactive Visualization
+The interactive visualization is built with DASH, which allows interactive elements in Jupyter Notebooks. 
+User can traverse through the latent space of trained models with sliders, while observing changes in the SPLOM upon changes in dimension or training hyperparameters. 
+
+![Interactive visualization of VAEs](https://github.com/chrisonntag/variational-latent-disentanglement/blob/main/assets/images/vis.png?raw=true)
 
 ## Usage
 
@@ -65,5 +83,8 @@ experiments = load_experiments(base_path="experiments/"+run_name, with_params=hy
 ```
 
 These can then be used as shown above.
+
+## Disclaimer
+This is a WIP research project and no released paper. This repo is meant for exploration purposes. 
 
 
